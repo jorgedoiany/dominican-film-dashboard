@@ -150,7 +150,7 @@ def apply_css() -> None:
             /* ── Hide streamlit branding ── */
             #MainMenu {{visibility: hidden;}}
             footer {{visibility: hidden;}}
-            header {{visibility: hidden;}}
+            header {{visibility: visible;}}
 
             /* ── Sidebar text ── */
             .sidebar-logo {{
