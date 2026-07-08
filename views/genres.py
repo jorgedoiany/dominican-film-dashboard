@@ -59,7 +59,7 @@ def render(df: pd.DataFrame) -> None:
                 "Each rectangle represents a genre. Size is proportional "
                 "to the number of films, and a film can belong to multiple genres."
             ),
-            header_height=34,
+            header_height=56,
         ):
             treemap_data = [
                 {"value": int(float(str(v))), "name": str(k).title()}
@@ -120,7 +120,7 @@ def render(df: pd.DataFrame) -> None:
                 "Share of documentary productions versus all other genres "
                 "in the Dominican film industry."
             ),
-            header_height=34,
+            header_height=56,
         ):
             option_donut = {
                 "tooltip": {

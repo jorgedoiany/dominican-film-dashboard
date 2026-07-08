@@ -234,16 +234,16 @@ def key_insight_row(insights: list, columns: str = "1fr 1fr") -> None:
 
 
 @contextmanager
-def chart_card(title: str, subtitle: str, header_height: int = 44):
+def chart_card(title: str, subtitle: str, header_height: int = 56):
     safe_title = escape_html(title)
     safe_subtitle = escape_html(subtitle)
     with st.container(border=True):
         html_block(f"""
-            <div class='chart-card-header' style='min-height:{header_height}px;margin-bottom:2px;'>
-                <div style='font-size:14px;font-weight:600;color:#1A1A2E;line-height:1.25;'>
+            <div class='chart-card-header' style='height:{header_height}px;margin-bottom:2px;overflow:hidden;'>
+                <div style='font-size:14px;font-weight:600;color:#1A1A2E;line-height:1.25;overflow:hidden;'>
                     {safe_title}
                 </div>
-                <div style='font-size:10px;color:#6B7280;line-height:1.35;margin-top:4px;'>
+                <div style='font-size:10px;color:#6B7280;line-height:1.35;margin-top:4px;overflow:hidden;'>
                     {safe_subtitle}
                 </div>
             </div>
