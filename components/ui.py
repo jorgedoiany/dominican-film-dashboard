@@ -184,6 +184,17 @@ def page_header(title: str, subtitle: str) -> None:
                 unsafe_allow_html=True)
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
 
+
+def empty_state(title: str, message: str) -> None:
+    html_block(f"""
+        <div style='border:1px solid #E5E7EB;background-color:#F8F9FA;
+        border-radius:12px;padding:16px;margin:8px 0 16px 0;'>
+            <div style='font-size:14px;font-weight:700;color:#1A1A2E;
+            margin-bottom:4px;'>{title}</div>
+            <div style='font-size:13px;color:#6B7280;'>{message}</div>
+        </div>
+    """)
+
 def key_insight_row(insights: list, columns: str = "1fr 1fr") -> None:
     blocks = []
     for insight in insights:

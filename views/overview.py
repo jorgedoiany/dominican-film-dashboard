@@ -5,11 +5,36 @@ from components.ui import (
     kpi_card,
     page_header,
     key_insight_row,
+    empty_state,
     chart_card,
 )
+from utils.data import validate_required_columns, has_rows
 
 
 def render(df: pd.DataFrame) -> None:
+    required_columns = [
+        'director',
+        'approx_budget',
+        'production_year',
+        'status',
+    ]
+    valid_columns, missing_columns = validate_required_columns(df, required_columns)
+    if not valid_columns:
+        empty_state(
+            "Missing Required Data",
+            "The Overview page cannot be rendered because required columns are missing: "
+            + ", ".join(missing_columns)
+            + ".",
+        )
+        return
+
+    if not has_rows(df):
+        empty_state(
+            "No Data Available",
+            "The dataset is empty, so overview metrics and charts cannot be displayed.",
+        )
+        return
+
     page_header(
         "Dominican Film Industry Dashboard",
         "Executive overview of Dominican Republic film production (2018–2025)"
@@ -31,12 +56,26 @@ def render(df: pd.DataFrame) -> None:
 
     # ── Prepare data ──
     films_by_year = df['production_year'].value_counts().sort_index()
+    if films_by_year.empty:
+        empty_state(
+            "No Production Year Data",
+            "There are no valid production year values to render the annual trend.",
+        )
+        return
+
     years = [str(y) for y in films_by_year.index.tolist()]
     values = films_by_year.values.tolist()
     peak_year = int(films_by_year.idxmax())
     peak_value = int(films_by_year.max())
 
     status_counts = df['status'].value_counts()
+    if status_counts.empty:
+        empty_state(
+            "No Status Data",
+            "There are no valid status values to render the status distribution.",
+        )
+        return
+
     status_data = [
         {"value": int(v), "name": str(k).replace("_", " ").title()}
         for k, v in status_counts.items()

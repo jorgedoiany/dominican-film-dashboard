@@ -2,10 +2,29 @@ import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
 from streamlit_echarts import st_echarts
-from components.ui import page_header, key_insight_row, chart_card
+from components.ui import page_header, key_insight_row, chart_card, empty_state
+from utils.data import validate_required_columns, has_rows
 
 
 def render(df: pd.DataFrame) -> None:
+    required_columns = ['approx_budget', 'production_year']
+    valid_columns, missing_columns = validate_required_columns(df, required_columns)
+    if not valid_columns:
+        empty_state(
+            "Missing Required Data",
+            "The Budget page cannot be rendered because required columns are missing: "
+            + ", ".join(missing_columns)
+            + ".",
+        )
+        return
+
+    if not has_rows(df):
+        empty_state(
+            "No Data Available",
+            "The dataset is empty, so budget analysis cannot be displayed.",
+        )
+        return
+
     page_header(
         "Budget Analysis",
         "Investment trends in Dominican film production (2018–2025)"
@@ -13,9 +32,23 @@ def render(df: pd.DataFrame) -> None:
 
     # ── Prepare data ──
     budget_df = df[df['approx_budget'].notna()].copy()
+    if budget_df.empty:
+        empty_state(
+            "No Budget Data",
+            "No valid budget records are available to render budget charts.",
+        )
+        return
+
     budget_df['production_year'] = budget_df['production_year'].astype(int)
 
     avg_budget_year = budget_df.groupby('production_year')['approx_budget'].mean().reset_index()
+    if avg_budget_year.empty:
+        empty_state(
+            "No Yearly Budget Data",
+            "Budget values are present, but there are no valid yearly aggregates to display.",
+        )
+        return
+
     avg_budget_year.columns = ['year', 'avg_budget']
 
     avg_budget_millions = (avg_budget_year['avg_budget'] / 1e6).round(1).tolist()

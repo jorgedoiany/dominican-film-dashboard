@@ -1,10 +1,29 @@
 import streamlit as st
 import pandas as pd
 from streamlit_echarts import st_echarts
-from components.ui import page_header, key_insight_row, chart_card
+from components.ui import page_header, key_insight_row, chart_card, empty_state
+from utils.data import validate_required_columns, has_rows
 
 
 def render(df: pd.DataFrame) -> None:
+    required_columns = ['genre', 'film_type']
+    valid_columns, missing_columns = validate_required_columns(df, required_columns)
+    if not valid_columns:
+        empty_state(
+            "Missing Required Data",
+            "The Genres page cannot be rendered because required columns are missing: "
+            + ", ".join(missing_columns)
+            + ".",
+        )
+        return
+
+    if not has_rows(df):
+        empty_state(
+            "No Data Available",
+            "The dataset is empty, so genre analysis cannot be displayed.",
+        )
+        return
+
     page_header(
         "Genre Analysis",
         "Distribution of film genres in Dominican cinema (2018–2025)"
@@ -13,6 +32,13 @@ def render(df: pd.DataFrame) -> None:
     # ── Prepare data ──
     genres = df['genre'].dropna().str.split('|').explode().str.strip()
     genre_counts = genres.value_counts()
+    if genre_counts.empty:
+        empty_state(
+            "No Genre Data",
+            "There are no valid genre values to render genre visualizations.",
+        )
+        return
+
     genre_names = genre_counts.index.tolist()
     genre_values = genre_counts.values.tolist()
 
