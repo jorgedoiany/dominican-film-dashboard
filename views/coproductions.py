@@ -2,10 +2,29 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 from streamlit_echarts import st_echarts
-from components.ui import page_header, key_insight_row, chart_card
+from components.ui import page_header, key_insight_row, chart_card, empty_state
+from utils.data import validate_required_columns, has_rows
 
 
 def render(df: pd.DataFrame) -> None:
+    required_columns = ['coproduction_country']
+    valid_columns, missing_columns = validate_required_columns(df, required_columns)
+    if not valid_columns:
+        empty_state(
+            "Missing Required Data",
+            "The Co-productions page cannot be rendered because required columns are missing: "
+            + ", ".join(missing_columns)
+            + ".",
+        )
+        return
+
+    if not has_rows(df):
+        empty_state(
+            "No Data Available",
+            "The dataset is empty, so co-production analysis cannot be displayed.",
+        )
+        return
+
     page_header(
         "Co-production Analysis",
         "International co-production partnerships in Dominican cinema (2018–2025)"
@@ -43,6 +62,13 @@ def render(df: pd.DataFrame) -> None:
         'count': countries.values,
         'country': [iso_to_name.get(c, c) for c in countries.index]
     })
+
+    if coprod_counts.empty:
+        empty_state(
+            "No Co-production Status Data",
+            "There are no co-production values available to build the distribution chart.",
+        )
+        return
 
     # ── Charts Row ──
     col_left, col_right = st.columns([1, 2], vertical_alignment="top")

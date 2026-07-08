@@ -2,9 +2,37 @@ import streamlit as st
 import pandas as pd
 from components.ui import page_header, key_insight_row
 from components.ui import html_block
+from components.ui import empty_state
+from utils.data import validate_required_columns, has_rows
 
 
 def render(df: pd.DataFrame) -> None:
+    required_columns = [
+        'title',
+        'production_year',
+        'genre',
+        'director',
+        'production_company',
+        'status',
+        'approx_budget',
+    ]
+    valid_columns, missing_columns = validate_required_columns(df, required_columns)
+    if not valid_columns:
+        empty_state(
+            "Missing Required Data",
+            "The Film Catalog page cannot be rendered because required columns are missing: "
+            + ", ".join(missing_columns)
+            + ".",
+        )
+        return
+
+    if not has_rows(df):
+        empty_state(
+            "No Data Available",
+            "The dataset is empty, so the film catalog cannot be displayed.",
+        )
+        return
+
     page_header(
         "Film Catalog",
         "Complete searchable catalog of Dominican film productions (2018–2025)"

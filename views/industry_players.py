@@ -1,10 +1,36 @@
 import streamlit as st
 import pandas as pd
 from streamlit_echarts import st_echarts
-from components.ui import page_header, key_insight_row, html_block, chart_card
+from components.ui import (
+    page_header,
+    key_insight_row,
+    html_block,
+    chart_card,
+    empty_state,
+    escape_html,
+)
+from utils.data import validate_required_columns, has_rows
 
 
 def render(df: pd.DataFrame) -> None:
+    required_columns = ['director', 'production_company']
+    valid_columns, missing_columns = validate_required_columns(df, required_columns)
+    if not valid_columns:
+        empty_state(
+            "Missing Required Data",
+            "The Industry Players page cannot be rendered because required columns are missing: "
+            + ", ".join(missing_columns)
+            + ".",
+        )
+        return
+
+    if not has_rows(df):
+        empty_state(
+            "No Data Available",
+            "The dataset is empty, so industry rankings cannot be displayed.",
+        )
+        return
+
     page_header(
         "Industry Players",
         "Top directors and production companies in Dominican cinema (2018–2025)"
@@ -12,11 +38,25 @@ def render(df: pd.DataFrame) -> None:
 
     # ── Prepare data ──
     top_directors = df['director'].value_counts().head(5)
+    if top_directors.empty:
+        empty_state(
+            "No Director Data",
+            "There are no valid director values to render the top directors ranking.",
+        )
+        return
+
     director_names: list[str] = [str(x) for x in top_directors.index.tolist()]
     director_values: list[int] = [int(x) for x in top_directors.values.astype(int).tolist()]
     director_pcts: list[float] = [round(v / len(df) * 100, 1) for v in director_values]
 
     top_companies = df['production_company'].value_counts().head(5)
+    if top_companies.empty:
+        empty_state(
+            "No Production Company Data",
+            "There are no valid production company values to render the top companies ranking.",
+        )
+        return
+
     company_names: list[str] = [str(x) for x in top_companies.index.tolist()]
     company_values: list[int] = [int(x) for x in top_companies.values.astype(int).tolist()]
     company_pcts: list[float] = [round(v / len(df) * 100, 1) for v in company_values]
@@ -101,6 +141,7 @@ def render(df: pd.DataFrame) -> None:
         st.markdown("<br>", unsafe_allow_html=True)
         for i, (name, value, pct) in enumerate(zip(
                 director_names, director_values, director_pcts)):
+            safe_name = escape_html(name)
             html_block(f"""
                 <div style='display:flex;align-items:center;
                 padding:8px 12px;margin-bottom:6px;
@@ -111,7 +152,7 @@ def render(df: pd.DataFrame) -> None:
                     min-width:32px;'>#{i+1}</span>
                     <span style='font-size:13px;color:#1A1A2E;
                     font-weight:{"600" if i == 0 else "400"};
-                    flex:1;'>{name}</span>
+                    flex:1;'>{safe_name}</span>
                     <span style='font-size:13px;color:#6B7280;'>
                     {value} films</span>
                     <span style='font-size:11px;color:#FFFFFF;
@@ -197,6 +238,7 @@ def render(df: pd.DataFrame) -> None:
         st.markdown("<br>", unsafe_allow_html=True)
         for i, (name, value, pct) in enumerate(zip(
                 company_names, company_values, company_pcts)):
+            safe_name = escape_html(name)
             html_block(f"""
                 <div style='display:flex;align-items:center;
                 padding:8px 12px;margin-bottom:6px;
@@ -207,7 +249,7 @@ def render(df: pd.DataFrame) -> None:
                     min-width:32px;'>#{i+1}</span>
                     <span style='font-size:13px;color:#1A1A2E;
                     font-weight:{"600" if i == 0 else "400"};
-                    flex:1;'>{name}</span>
+                    flex:1;'>{safe_name}</span>
                     <span style='font-size:13px;color:#6B7280;'>
                     {value} films</span>
                     <span style='font-size:11px;color:#FFFFFF;
