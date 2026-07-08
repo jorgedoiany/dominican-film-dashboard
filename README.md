@@ -56,9 +56,9 @@ streamlit run app.py
 
 - main: production, always stable, protected.
 - develop: integration branch.
-- feature/*: new features.
-- fix/*: bug fixes.
-- refactor/*: code reorganization.
+- feature/\*: new features.
+- fix/\*: bug fixes.
+- refactor/\*: code reorganization.
 
 ## Commit Convention (Conventional Commits)
 
@@ -72,7 +72,7 @@ streamlit run app.py
 
 ## Pull Request Rules
 
-- feature/* to develop (never directly to main).
+- feature/\* to develop (never directly to main).
 - develop to main (only for releases).
 - Always fill the PR template in .github/PULL_REQUEST_TEMPLATE.md.
 - Delete feature/fix/refactor branch after merge.
