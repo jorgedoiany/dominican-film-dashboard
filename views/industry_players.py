@@ -1,7 +1,14 @@
 import streamlit as st
 import pandas as pd
 from streamlit_echarts import st_echarts
-from components.ui import page_header, key_insight_row, html_block, chart_card, empty_state
+from components.ui import (
+    page_header,
+    key_insight_row,
+    html_block,
+    chart_card,
+    empty_state,
+    escape_html,
+)
 from utils.data import validate_required_columns, has_rows
 
 
@@ -134,6 +141,7 @@ def render(df: pd.DataFrame) -> None:
         st.markdown("<br>", unsafe_allow_html=True)
         for i, (name, value, pct) in enumerate(zip(
                 director_names, director_values, director_pcts)):
+            safe_name = escape_html(name)
             html_block(f"""
                 <div style='display:flex;align-items:center;
                 padding:8px 12px;margin-bottom:6px;
@@ -144,7 +152,7 @@ def render(df: pd.DataFrame) -> None:
                     min-width:32px;'>#{i+1}</span>
                     <span style='font-size:13px;color:#1A1A2E;
                     font-weight:{"600" if i == 0 else "400"};
-                    flex:1;'>{name}</span>
+                    flex:1;'>{safe_name}</span>
                     <span style='font-size:13px;color:#6B7280;'>
                     {value} films</span>
                     <span style='font-size:11px;color:#FFFFFF;
@@ -230,6 +238,7 @@ def render(df: pd.DataFrame) -> None:
         st.markdown("<br>", unsafe_allow_html=True)
         for i, (name, value, pct) in enumerate(zip(
                 company_names, company_values, company_pcts)):
+            safe_name = escape_html(name)
             html_block(f"""
                 <div style='display:flex;align-items:center;
                 padding:8px 12px;margin-bottom:6px;
@@ -240,7 +249,7 @@ def render(df: pd.DataFrame) -> None:
                     min-width:32px;'>#{i+1}</span>
                     <span style='font-size:13px;color:#1A1A2E;
                     font-weight:{"600" if i == 0 else "400"};
-                    flex:1;'>{name}</span>
+                    flex:1;'>{safe_name}</span>
                     <span style='font-size:13px;color:#6B7280;'>
                     {value} films</span>
                     <span style='font-size:11px;color:#FFFFFF;

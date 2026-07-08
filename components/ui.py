@@ -1,4 +1,5 @@
 import streamlit as st
+import html
 from contextlib import contextmanager
 from textwrap import dedent
 from streamlit_option_menu import option_menu
@@ -18,6 +19,20 @@ ACCENT2    = '#CE1126'
 
 def html_block(html: str) -> None:
     st.markdown(dedent(html).strip(), unsafe_allow_html=True)
+
+
+def escape_html(value: object) -> str:
+    return html.escape(str(value), quote=True)
+
+
+def sanitize_insight_html(insight: str) -> str:
+    escaped = escape_html(insight)
+    escaped = escaped.replace("&lt;strong&gt;", "<strong>")
+    escaped = escaped.replace("&lt;/strong&gt;", "</strong>")
+    escaped = escaped.replace("&lt;br&gt;", "<br>")
+    escaped = escaped.replace("&lt;br/&gt;", "<br/>")
+    escaped = escaped.replace("&lt;br /&gt;", "<br />")
+    return escaped
 
 
 # ─────────────────────────────────────────
@@ -156,14 +171,18 @@ def apply_css() -> None:
 # COMPONENTS
 # ─────────────────────────────────────────
 def kpi_card(label: str, value: str, subtitle: str = "") -> None:
+    safe_label = escape_html(label)
+    safe_value = escape_html(value)
+    safe_subtitle = escape_html(subtitle)
+
     st.markdown(f"""
         <div class='kpi-card'>
-            <div class='kpi-label'>{label}</div>
+            <div class='kpi-label'>{safe_label}</div>
             <div style='display:flex;align-items:center;'>
                 <span class='kpi-accent'></span>
-                <span class='kpi-value'>{value}</span>
+                <span class='kpi-value'>{safe_value}</span>
             </div>
-            <div class='kpi-subtitle'>{subtitle}</div>
+            <div class='kpi-subtitle'>{safe_subtitle}</div>
         </div>
     """, unsafe_allow_html=True)
 
@@ -178,33 +197,38 @@ def section_title(title: str) -> None:
 
 
 def page_header(title: str, subtitle: str) -> None:
-    st.markdown(f"<div class='page-title'>{title}</div>",
+    safe_title = escape_html(title)
+    safe_subtitle = escape_html(subtitle)
+    st.markdown(f"<div class='page-title'>{safe_title}</div>",
                 unsafe_allow_html=True)
-    st.markdown(f"<div class='page-subtitle'>{subtitle}</div>",
+    st.markdown(f"<div class='page-subtitle'>{safe_subtitle}</div>",
                 unsafe_allow_html=True)
     st.markdown("<hr class='divider'>", unsafe_allow_html=True)
 
 
 def empty_state(title: str, message: str) -> None:
+    safe_title = escape_html(title)
+    safe_message = escape_html(message)
     html_block(f"""
         <div style='border:1px solid #E5E7EB;background-color:#F8F9FA;
         border-radius:12px;padding:16px;margin:8px 0 16px 0;'>
             <div style='font-size:14px;font-weight:700;color:#1A1A2E;
-            margin-bottom:4px;'>{title}</div>
-            <div style='font-size:13px;color:#6B7280;'>{message}</div>
+            margin-bottom:4px;'>{safe_title}</div>
+            <div style='font-size:13px;color:#6B7280;'>{safe_message}</div>
         </div>
     """)
 
 def key_insight_row(insights: list, columns: str = "1fr 1fr") -> None:
     blocks = []
     for insight in insights:
+        safe_insight = sanitize_insight_html(str(insight))
         blocks.append(
             (
                 "<div style='background-color:#F0F4FF;border-left:4px solid #002D62;"
                 "border-radius:0 8px 8px 0;padding:12px 16px;'>"
                 "<span style='font-size:12px;font-weight:600;color:#002D62;"
                 "text-transform:uppercase;letter-spacing:0.05em;'>Key Insight</span><br>"
-                f"<span style='font-size:13px;color:#1A1A2E;'>{insight}</span>"
+                f"<span style='font-size:13px;color:#1A1A2E;'>{safe_insight}</span>"
                 "</div>"
             )
         )
@@ -235,14 +259,16 @@ def chart_card_end() -> None:
 
 @contextmanager
 def chart_card(title: str, subtitle: str, header_height: int = 44):
+    safe_title = escape_html(title)
+    safe_subtitle = escape_html(subtitle)
     with st.container(border=True):
         html_block(f"""
             <div style='min-height:{header_height}px;margin-bottom:2px;'>
                 <div style='font-size:14px;font-weight:600;color:#1A1A2E;line-height:1.25;'>
-                    {title}
+                    {safe_title}
                 </div>
                 <div style='font-size:10px;color:#6B7280;line-height:1.35;margin-top:4px;'>
-                    {subtitle}
+                    {safe_subtitle}
                 </div>
             </div>
         """)
