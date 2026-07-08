@@ -1,13 +1,16 @@
 import streamlit as st
 from utils.data import load_data
 from components.ui import apply_css, render_sidebar
+from PIL import Image
 
 # ─────────────────────────────────────────
 # PAGE CONFIGURATION
 # ─────────────────────────────────────────
+favicon = Image.open("assets/favicon.png")
+
 st.set_page_config(
     page_title="Dominican Film Industry Dashboard",
-    page_icon="🎬",
+    page_icon=favicon,
     layout="wide",
     initial_sidebar_state="expanded"
 )
