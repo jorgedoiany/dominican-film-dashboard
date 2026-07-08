@@ -114,8 +114,8 @@ def apply_css() -> None:
                 vertical-align: middle;
             }}
 
-            /* ── Chart containers ── */
-            [data-testid="stVerticalBlockBorderWrapper"] {{
+            /* ── Chart containers (scoped to chart cards) ── */
+            [data-testid="stVerticalBlockBorderWrapper"]:has(.chart-card-header) {{
                 border-radius: 16px !important;
                 border: 1px solid {BORDER} !important;
                 box-shadow: 0 2px 8px rgba(0,0,0,0.06) !important;
@@ -123,7 +123,7 @@ def apply_css() -> None:
             }}
 
             /* ── Chart card caption ── */
-            [data-testid="stVerticalBlockBorderWrapper"] [data-testid="stCaptionContainer"] {{
+            [data-testid="stVerticalBlockBorderWrapper"]:has(.chart-card-header) [data-testid="stCaptionContainer"] {{
                 min-height: 36px;
             }}
 
@@ -239,7 +239,7 @@ def chart_card(title: str, subtitle: str, header_height: int = 44):
     safe_subtitle = escape_html(subtitle)
     with st.container(border=True):
         html_block(f"""
-            <div style='min-height:{header_height}px;margin-bottom:2px;'>
+            <div class='chart-card-header' style='min-height:{header_height}px;margin-bottom:2px;'>
                 <div style='font-size:14px;font-weight:600;color:#1A1A2E;line-height:1.25;'>
                     {safe_title}
                 </div>
