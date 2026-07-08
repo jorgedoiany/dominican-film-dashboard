@@ -187,15 +187,6 @@ def kpi_card(label: str, value: str, subtitle: str = "") -> None:
     """, unsafe_allow_html=True)
 
 
-def section_title(title: str) -> None:
-    st.markdown(f"""
-        <div style='font-size:18px;font-weight:700;color:#1A1A2E;
-        margin:24px 0 12px 0;'>
-            {title}
-        </div>
-    """, unsafe_allow_html=True)
-
-
 def page_header(title: str, subtitle: str) -> None:
     safe_title = escape_html(title)
     safe_subtitle = escape_html(subtitle)
@@ -240,21 +231,6 @@ def key_insight_row(insights: list, columns: str = "1fr 1fr") -> None:
         "</div>"
     )
     st.markdown(html, unsafe_allow_html=True)
-
-
-def chart_card_start(title: str, subtitle: str = "") -> None:
-    st.markdown(f"""
-        <div style='background-color:#FFFFFF;border:1px solid #E5E7EB;
-        border-radius:16px;padding:24px;
-        box-shadow:0 2px 8px rgba(0,0,0,0.06);margin-bottom:16px;'>
-            <div style='font-size:16px;font-weight:700;color:#1A1A2E;
-            margin-bottom:4px;'>{title}</div>
-            <div style='font-size:12px;color:#6B7280;
-            margin-bottom:16px;'>{subtitle}</div>
-    """, unsafe_allow_html=True)
-
-def chart_card_end() -> None:
-    st.markdown("</div>", unsafe_allow_html=True)
 
 
 @contextmanager
