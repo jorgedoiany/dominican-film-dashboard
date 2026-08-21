@@ -31,7 +31,7 @@ def load_data() -> pd.DataFrame:
 
 @st.cache_data
 def load_cipac_data() -> pd.DataFrame:
-    """Load CIPAC resolutions from Supabase."""
+    """Load all CIPAC resolutions from Supabase."""
     engine = create_engine(os.getenv('SUPABASE_DB_URL') or '')
     df = pd.read_sql("""
         SELECT
@@ -52,11 +52,8 @@ def load_cipac_data() -> pd.DataFrame:
             tax_credit_dop,
             tax_credit_pct,
             total_budget_approved,
-            total_budget_executed,
-            needs_review,
-            manually_reviewed
+            total_budget_executed
         FROM cipac_resolutions
-        WHERE resolution_type = 'approved'
         ORDER BY year, resolution_number
     """, engine)
     return df
