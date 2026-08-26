@@ -48,7 +48,7 @@ def load_cipac_data() -> pd.DataFrame:
             cpnd_number,
             request_date,
             resolution_date,
-            validated_expenses_dop,
+            validated_amount_dop,
             tax_credit_dop,
             tax_credit_pct,
             total_budget_approved,
