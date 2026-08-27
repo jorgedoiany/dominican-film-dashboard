@@ -21,7 +21,17 @@ def has_rows(df: pd.DataFrame) -> bool:
 
 @st.cache_data
 def load_data() -> pd.DataFrame:
-    df = pd.read_csv('data/01_movies.csv', sep=';', encoding='utf-8-sig')
+    """Load productions from Supabase."""
+    engine = create_engine(os.getenv('SUPABASE_DB_URL') or '')
+    df = pd.read_sql("""
+        SELECT
+            movie_id, title, production_year, release_year, genre,
+            duration_min, coproduction_country, status, director,
+            screenplay_author, production_company, short_synopsis,
+            approx_budget, original_language
+        FROM productions
+        ORDER BY production_year, title
+    """, engine)
     df['film_type'] = df['genre'].apply(
         lambda x: 'Documentary' if isinstance(x, str)
         and 'documentary' in x.lower() else 'Non-Documentary'
@@ -48,7 +58,7 @@ def load_cipac_data() -> pd.DataFrame:
             cpnd_number,
             request_date,
             resolution_date,
-            validated_expenses_dop,
+            validated_amount_dop,
             tax_credit_dop,
             tax_credit_pct,
             total_budget_approved,
