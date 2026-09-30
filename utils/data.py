@@ -53,7 +53,7 @@ def load_cipac_data() -> pd.DataFrame:
             investor_rnc,
             producer_rnc,
             film_title,
-            local_company,
+            production_company,
             pur_number,
             cpnd_number,
             request_date,
