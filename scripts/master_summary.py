@@ -23,8 +23,8 @@ def load():
     df['request_date'] = pd.to_datetime(df['request_date'])
     df['resolution_date'] = pd.to_datetime(df['resolution_date'])
     appr = df[df['resolution_type'] == 'approved'].copy()
-    d34_all = df[df['incentive_article'] == 'art_34']   # used by sections 8-11 in the notebook (includes rejected)
-    d39_all = df[df['incentive_article'] == 'art_39']
+    d34_all = df[(df['incentive_article'] == 'art_34') & (df['resolution_type'] == 'approved')]  # sections 8-11: approved only
+    d39_all = df[(df['incentive_article'] == 'art_39') & (df['resolution_type'] == 'approved')]
     a34 = appr[appr['incentive_article'] == 'art_34']
     a39 = appr[appr['incentive_article'] == 'art_39']
     t = appr[appr['request_date'].notna() & appr['resolution_date'].notna()].copy()
@@ -47,6 +47,17 @@ def outliers(appr, cols):
         n = int(((x < q1 - 1.5 * i) | (x > q3 + 1.5 * i)).sum())
         rows.append((c, n, round(n / len(x) * 100, 1), round(x.min() / M, 1), round(x.max() / M, 1)))
     return pd.DataFrame(rows, columns=['variable', 'outliers', 'pct', 'min_M', 'max_M'])
+
+
+def outliers_by_article(appr, cols):
+    rows = []
+    for c in cols:
+        d = appr[['incentive_article', c]].dropna()
+        q1, q3 = d[c].quantile(.25), d[c].quantile(.75)
+        i = q3 - q1
+        o = d[(d[c] < q1 - 1.5 * i) | (d[c] > q3 + 1.5 * i)]
+        rows.append((c, len(o), int((o['incentive_article'] == 'art_34').sum()), int((o['incentive_article'] == 'art_39').sum())))
+    return pd.DataFrame(rows, columns=['variable', 'outliers', 'art_34', 'art_39'])
 
 
 def quarters(appr):
@@ -93,7 +104,8 @@ def sections(S, only):
         lines.append(f'non-standard resolution numbers: {odd}')
         return '\n'.join(lines)
     out[3] = ('Data Quality', s3)
-    out[4] = ('Outliers (IQR, approved only)', lambda: outliers(appr, num4 + ['tax_credit_pct']).to_string(index=False))
+    out[4] = ('Outliers (IQR, approved only)', lambda: outliers(appr, num4 + ['tax_credit_pct']).to_string(index=False)
+              + '\n\nby article:\n' + outliers_by_article(appr, num4).to_string(index=False))
     out[5] = ('Resolutions by Year (all)', lambda: df['year'].value_counts().sort_index().to_string())
     def s6():
         by = t.groupby('year')['days'].mean().round(1)
@@ -109,7 +121,7 @@ def sections(S, only):
     out[7] = ('Art. 34 vs Art. 39', lambda: '\n'.join([
         str(df.groupby(['incentive_article', 'resolution_type']).size().to_dict()),
         'by year and article:', df.groupby(['year', 'incentive_article']).size().unstack(fill_value=0).to_string()]))
-    out[8] = ('Top Art. 34 Investors (notebook uses ALL art_34, incl. rejected)', lambda: '\n'.join([
+    out[8] = ('Top Art. 34 Investors (approved only)', lambda: '\n'.join([
         'by number of resolutions:', tbl(d34.groupby(['investor_rnc', 'investor_name']).size().sort_values(ascending=False)), '',
         'by total tax credit (RD$ M):', tbl((d34.groupby(['investor_rnc', 'investor_name'])['tax_credit_dop'].sum().dropna().sort_values(ascending=False) / M).round(1))]))
     out[9] = ('Top Art. 34 Production Companies', lambda: '\n'.join([
@@ -170,8 +182,9 @@ def check(S):
     c('total resolutions', 2543, n)
     c('approved', 2539, len(appr)); c('approved %', 99.8, round(len(appr) / n * 100, 1), .05)
     c('rejected', 4, n - len(appr))
-    c('art_34 total', 2459, len(d34)); c('art_34 %', 96.7, round(len(d34) / n * 100, 1), .05)
-    c('art_39 total', 84, len(d39)); c('art_39 %', 3.3, round(len(d39) / n * 100, 1), .05)
+    n34, n39 = int((df['incentive_article'] == 'art_34').sum()), int((df['incentive_article'] == 'art_39').sum())
+    c('art_34 total', 2459, n34); c('art_34 %', 96.7, round(n34 / n * 100, 1), .05)
+    c('art_39 total', 84, n39); c('art_39 %', 3.3, round(n39 / n * 100, 1), .05)
     c('approved art_34', 2455, len(a34)); c('approved art_39', 84, len(a39))
     c('rejected art_34', 4, int(((df.resolution_type == 'rejected') & (df.incentive_article == 'art_34')).sum()))
     for col, claimed in [('investor_name', 3.3), ('investor_rnc', 3.3), ('cpnd_number', 3.3)]:
@@ -185,9 +198,15 @@ def check(S):
     o = outliers(appr, ['validated_amount_dop', 'tax_credit_dop', 'total_budget_approved', 'total_budget_executed', 'tax_credit_pct']).set_index('variable')
     for col, cnt, pct in [('validated_amount_dop', 289, 11.4), ('tax_credit_dop', 271, 10.7), ('total_budget_approved', 102, 4.0), ('total_budget_executed', 61, 2.4), ('tax_credit_pct', 84, 3.3)]:
         c(f'outliers {col}', cnt, o.loc[col, 'outliers']); c(f'outliers % {col}', pct, o.loc[col, 'pct'], .05)
+    oa = outliers_by_article(appr, ['validated_amount_dop', 'tax_credit_dop', 'total_budget_approved', 'total_budget_executed']).set_index('variable')
+    for col, n34, n39 in [('validated_amount_dop', 211, 78), ('tax_credit_dop', 218, 53), ('total_budget_approved', 44, 58), ('total_budget_executed', 10, 51)]:
+        c(f'outliers art_34 {col}', n34, oa.loc[col, 'art_34']); c(f'outliers art_39 {col}', n39, oa.loc[col, 'art_39'])
+    c('art_39 outliers, % of its resolutions', 93, round(oa.loc['validated_amount_dop', 'art_39'] / len(a39) * 100), .5)
+    c('art_34 outliers, % of its resolutions', 8.6, round(oa.loc['validated_amount_dop', 'art_34'] / len(a34) * 100, 1), .05)
     ry = df['year'].value_counts().sort_index()
     c('resolutions 2012', 14, int(ry.get(2012, 0))); c('peak year', 2023, int(ry.idxmax())); c('peak count', 330, int(ry.max()))
-    c('average per year', 170, round(n / ry.size)); c('lowest year', 2012, int(ry.idxmin()))
+    comp = ry[ry.index < df['resolution_date'].max().year]
+    c('average per year, complete years', 166, round(comp.mean())); c('lowest year', 2012, int(ry.idxmin()))
     c('processing records', 2537, len(t)); c('processing mean', 33, round(t['days'].mean())); c('processing median', 29, round(t['days'].median()))
     by = t.groupby('year')['days'].mean().round(1)
     for y, v in [(2017, 46.6), (2013, 38.3), (2018, 41.4), (2020, 36.8), (2024, 34.8), (2012, 10.6), (2025, 29.5), (2026, 28.9)]:
@@ -209,13 +228,20 @@ def check(S):
     avg = appr.groupby('incentive_article')['tax_credit_dop'].mean() / M
     c('avg credit art_39 RD$M', 88.3, round(avg['art_39'], 1), .05); c('avg credit art_34 RD$M', 9.2, round(avg['art_34'], 1), .05)
     c('credit ratio', 9.6, round(avg['art_39'] / avg['art_34'], 1), .05)
+    med = appr.groupby('incentive_article')['tax_credit_dop'].median() / M
+    c('median credit art_39 RD$M', 36.8, round(med['art_39'], 1), .05); c('median credit art_34 RD$M', 5.0, round(med['art_34'], 1), .05)
+    c('median credit ratio', 7.4, round(med['art_39'] / med['art_34'], 1), .05)
     ic = d34.groupby(['investor_rnc', 'investor_name']).size().sort_values(ascending=False).head(5)
-    c('top 5 investors, resolutions', [88, 86, 78, 66, 55], ic.tolist())
+    c('top 5 investors, resolutions', [88, 86, 78, 65, 55], ic.tolist())
     icr = (d34.groupby(['investor_rnc', 'investor_name'])['tax_credit_dop'].sum().dropna().sort_values(ascending=False) / M).round(1).head(5)
     c('top 5 investors, credit RD$M', [3002.9, 2114.7, 1642.8, 1030.9, 943.6], icr.tolist())
+    tc = d34.groupby('investor_rnc')['tax_credit_dop'].sum().sort_values(ascending=False)
+    c('top 5 investors, share of Art. 34 credit %', 38.8, round(tc.head(5).sum() / d34['tax_credit_dop'].sum() * 100, 1), .05)
+    c('top 15 investors, share of Art. 34 credit %', 56.6, round(tc.head(15).sum() / d34['tax_credit_dop'].sum() * 100, 1), .05)
+    c('Art. 34 investors', 487, d34['investor_rnc'].nunique())
     c1 = d34.groupby('pur_number').size()
-    c('art_34 unique PUR', 524, len(c1)); c('art_34 films with 1', 106, int((c1 == 1).sum())); c('art_34 films with >=2', 418, int((c1 >= 2).sum()))
-    c('art_34 films with >=5', 222, int((c1 >= 5).sum())); c('art_34 films with >=10', 49, int((c1 >= 10).sum()))
+    c('art_34 unique PUR', 523, len(c1)); c('art_34 films with 1', 105, int((c1 == 1).sum())); c('art_34 films with >=2', 418, int((c1 >= 2).sum()))
+    c('art_34 films with >=5', 220, int((c1 >= 5).sum())); c('art_34 films with >=10', 49, int((c1 >= 10).sum()))
     ft = d34.groupby(['pur_number', 'film_title']).size().sort_values(ascending=False)
     c('art_34 max resolutions per film', 29, int(ft.max()))
     f34 = (d34.groupby(['pur_number', 'film_title'])['validated_amount_dop'].sum().dropna().sort_values(ascending=False) / M).round(1).head(5)
@@ -223,6 +249,7 @@ def check(S):
     pc = d34.groupby(['producer_rnc', 'production_company']).size().sort_values(ascending=False).head(5)
     c('top 5 art_34 companies, resolutions', [59, 51, 46, 45, 37], pc.tolist())
     c39 = d39.groupby('pur_number').size()
+    c('art_39 films with 2+', 7, int((c39 >= 2).sum()))
     c('art_39 unique PUR', 76, len(c39)); c('art_39 max resolutions per film', 3, int(c39.max()))
     e39 = (d39.groupby(['producer_rnc', 'production_company'])['validated_amount_dop'].sum().dropna().sort_values(ascending=False) / M).round(1).head(3)
     c('top 3 art_39 companies RD$M', [4302.2, 4033.5, 2404.6], e39.tolist())
@@ -234,12 +261,32 @@ def check(S):
     c('lowest year rate % (2014 and 2016)', 69.4, b['rate'].min(), .05); c('years at the lowest rate', [2014, 2016], b.index[b['rate'] == b['rate'].min()].tolist())
     c('highest year rate % (2013)', 86.3, b['rate'].max(), .05); c('year of the highest rate', 2013, int(b['rate'].idxmax()))
     c('resolutions with rate > 100%', 77, n100); c('% with rate > 100%', 3.0, round(n100 / len(e) * 100, 1), .05)
+    latest = (appr.sort_values(['pur_number', 'resolution_date', 'resolution_number']).groupby('pur_number').tail(1)
+              .dropna(subset=['total_budget_approved', 'total_budget_executed']))
+    over_f = int((latest['total_budget_executed'] > latest['total_budget_approved']).sum())
+    c('films with budgets (latest resolution)', 599, len(latest))
+    c('execution rate, latest resolution of each film %', 84.7, round(latest['total_budget_executed'].sum() / latest['total_budget_approved'].sum() * 100, 1), .05)
+    c('films with executed above approved', 47, over_f); c('% of films with executed above approved', 7.8, round(over_f / len(latest) * 100, 1), .05)
     r = appr[['validated_amount_dop', 'tax_credit_dop', 'tax_credit_pct', 'total_budget_approved', 'total_budget_executed']].corr()
     for a, bb, claimed in [('validated_amount_dop', 'total_budget_approved', .97), ('validated_amount_dop', 'tax_credit_dop', .96),
                            ('validated_amount_dop', 'total_budget_executed', .96), ('total_budget_approved', 'total_budget_executed', .96),
                            ('tax_credit_dop', 'total_budget_approved', .92), ('tax_credit_dop', 'total_budget_executed', .91),
                            ('tax_credit_pct', 'tax_credit_dop', -.41), ('tax_credit_pct', 'validated_amount_dop', -.47)]:
         c(f'corr {a} / {bb}', claimed, round(r.loc[a, bb], 2), .005)
+    money = ['validated_amount_dop', 'tax_credit_dop', 'total_budget_approved', 'total_budget_executed']
+    sp = appr[money].corr(method='spearman')
+    for x, y, claimed in [('validated_amount_dop', 'tax_credit_dop', .99), ('validated_amount_dop', 'total_budget_approved', .22),
+                          ('validated_amount_dop', 'total_budget_executed', .28), ('total_budget_approved', 'total_budget_executed', .74)]:
+        c(f'spearman {x} / {y}', claimed, round(sp.loc[x, y], 2), .005)
+    for art, d, vals in (('art_34', a34, (.21, .30, .73)), ('art_39', a39, (.98, .96, .96))):
+        rr = d[money].corr()
+        for (x, y), claimed in zip((('validated_amount_dop', 'total_budget_approved'), ('validated_amount_dop', 'total_budget_executed'),
+                                    ('total_budget_approved', 'total_budget_executed')), vals):
+            c(f'pearson {art} {x} / {y}', claimed, round(rr.loc[x, y], 2), .005)
+    films34 = d34.groupby('pur_number').agg(validated=('validated_amount_dop', 'sum'), budget=('total_budget_approved', 'median')).dropna()
+    c('film-level check, number of Art. 34 films', 523, len(films34))
+    c('film-level pearson, validated / approved budget', .84, round(films34['validated'].corr(films34['budget']), 2), .005)
+    c('film-level spearman, validated / approved budget', .84, round(films34['validated'].corr(films34['budget'], method='spearman'), 2), .005)
     bad = [x for x in rows if x[3] != 'OK']
     print(f'\n## Check of Key Findings: {len(rows)} claims | OK {len(rows) - len(bad)} | MISMATCH {len(bad)}')
     for lab, claimed, actual, st in rows:
